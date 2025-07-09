@@ -167,7 +167,7 @@ export async function listGoogleSheetsTabs(): Promise<string[]> {
   }
 }
 
-export async function createGoogleSheetTab(sheetName: string): Promise<void> {
+export async function createGoogleSheetTab(sheetName: string, isGeneralSheet: boolean = false): Promise<void> {
   try {
     console.log('📝 Creando nueva hoja:', sheetName);
     
@@ -216,7 +216,7 @@ export async function createGoogleSheetTab(sheetName: string): Promise<void> {
     console.log('✅ Hoja creada exitosamente:', sheetName);
     
     // Añadir encabezados a la nueva hoja
-    await addHeadersToSheet(sheetName, config, accessToken);
+    await addHeadersToSheet(sheetName, config, accessToken, isGeneralSheet);
     
   } catch (error) {
     console.error('❌ Error creating sheet:', error);
@@ -224,11 +224,19 @@ export async function createGoogleSheetTab(sheetName: string): Promise<void> {
   }
 }
 
-async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, accessToken: string): Promise<void> {
+async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, accessToken: string, isGeneralSheet: boolean = false): Promise<void> {
   try {
     console.log('📋 Añadiendo encabezados a la hoja:', sheetName);
     
-    const headers = [
+    const headers = isGeneralSheet ? [
+      'Timestamp',
+      'Duración (seg)',
+      'Transcripción',
+      'Tema/Área',
+      'Prioridad',
+      'Acciones Pendientes',
+      'Resumen'
+    ] : [
       'Timestamp',
       'Duración (seg)',
       'Transcripción',
@@ -239,7 +247,8 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
       'Acciones'
     ];
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!A1:H1?valueInputOption=RAW`;
+    const range = isGeneralSheet ? 'A1:G1' : 'A1:H1';
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!${range}?valueInputOption=RAW`;
     
     const response = await fetch(url, {
       method: 'PUT',

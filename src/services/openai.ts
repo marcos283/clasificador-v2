@@ -234,3 +234,151 @@ RESPONDE SOLO CON EL JSON:`;
     return fallback;
   }
 }
+
+export async function classifyGeneralContent(transcription: string): Promise<any> {
+  try {
+    console.log('🤖 Iniciando clasificación de nota general con GPT...');
+    console.log('Texto a clasificar:', transcription.substring(0, 100) + '...');
+
+    if (!transcription || transcription.trim().length === 0) {
+      throw new Error('No hay texto para clasificar');
+    }
+
+    const prompt = `
+Eres un asistente especializado en analizar notas de voz de profesores sobre su trabajo en el aula y tareas pendientes.
+
+INSTRUCCIONES CRÍTICAS:
+1. Analiza la transcripción e identifica el tema principal, prioridad y acciones pendientes
+2. Responde ÚNICAMENTE en formato JSON válido, sin texto adicional
+3. Clasifica según las categorías específicas para notas generales de profesores
+
+FORMATO DE RESPUESTA REQUERIDO:
+{
+  "topic": "Gestión de Aula|Planificación de Clases|Administrativo|Comunicación con Padres|Reflexión Personal|Evaluación|Material Didáctico|Otro",
+  "priority": "Alta|Media|Baja",
+  "summary": "Resumen conciso de la nota",
+  "pendingActions": "Lista de acciones específicas a realizar"
+}
+
+CRITERIOS DE CLASIFICACIÓN:
+
+TEMA/ÁREA:
+- "Gestión de Aula": Disciplina, organización del espacio, rutinas, comportamiento grupal
+- "Planificación de Clases": Preparación de lecciones, secuencias didácticas, objetivos
+- "Administrativo": Reportes, documentación, reuniones, trámites
+- "Comunicación con Padres": Contactos familiares, reuniones, informes a padres
+- "Reflexión Personal": Autoevaluación, mejoras metodológicas, desarrollo profesional
+- "Evaluación": Exámenes, calificaciones, rúbricas, retroalimentación
+- "Material Didáctico": Recursos, materiales, tecnología educativa
+- "Otro": Cualquier tema que no encaje en las categorías anteriores
+
+PRIORIDAD:
+- "Alta": Urgente, requiere atención inmediata (deadlines cercanos, problemas críticos)
+- "Media": Importante pero no urgente (planificación a mediano plazo)
+- "Baja": Puede esperar, ideas para el futuro
+
+EJEMPLOS:
+
+Transcripción: "Necesito preparar el examen de matemáticas para la próxima semana y revisar las rúbricas de evaluación"
+Respuesta:
+{
+  "topic": "Evaluación",
+  "priority": "Alta",
+  "summary": "Preparación de examen de matemáticas y revisión de rúbricas para la próxima semana",
+  "pendingActions": "1. Diseñar preguntas del examen de matemáticas, 2. Revisar y ajustar rúbricas de evaluación, 3. Programar fecha de aplicación"
+}
+
+Transcripción: "Los estudiantes están muy distraídos en las últimas clases, necesito cambiar la disposición de los asientos"
+Respuesta:
+{
+  "topic": "Gestión de Aula",
+  "priority": "Media",
+  "summary": "Problema de distracción estudiantil requiere reorganización del aula",
+  "pendingActions": "1. Diseñar nueva distribución de asientos, 2. Implementar cambios en el aula, 3. Observar mejoras en atención"
+}
+
+Transcripción: "Recordar llamar a la mamá de Pedro para comentar sobre su progreso en lectura"
+Respuesta:
+{
+  "topic": "Comunicación con Padres",
+  "priority": "Media",
+  "summary": "Contactar a madre de Pedro sobre progreso en lectura",
+  "pendingActions": "1. Llamar a la madre de Pedro, 2. Preparar informe de progreso en lectura, 3. Programar seguimiento"
+}
+
+AHORA ANALIZA ESTA TRANSCRIPCIÓN:
+"${transcription}"
+
+RESPONDE SOLO CON EL JSON:`;
+
+    console.log('🌐 Enviando a OpenAI GPT para clasificación general...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      max_tokens: 800
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) throw new Error('No response from OpenAI');
+
+    console.log('📝 Respuesta cruda de GPT (general):', content);
+    
+    // Limpiar la respuesta para asegurar que sea JSON válido
+    let cleanContent = content.trim();
+    
+    // Remover cualquier texto antes o después del JSON
+    const jsonStart = cleanContent.indexOf('{');
+    const jsonEnd = cleanContent.lastIndexOf('}') + 1;
+    
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      cleanContent = cleanContent.substring(jsonStart, jsonEnd);
+    }
+    
+    console.log('📝 JSON limpio (general):', cleanContent);
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanContent);
+    } catch (parseError) {
+      console.error('❌ Error parsing JSON (general):', parseError);
+      console.log('Contenido que falló:', cleanContent);
+      
+      // Fallback: crear estructura básica para notas generales
+      parsed = {
+        topic: "Otro",
+        priority: "Media",
+        summary: transcription.substring(0, 100) + "...",
+        pendingActions: "Revisar nota para más detalles"
+      };
+    }
+    
+    // Validar y normalizar estructura
+    const validTopics = ["Gestión de Aula", "Planificación de Clases", "Administrativo", "Comunicación con Padres", "Reflexión Personal", "Evaluación", "Material Didáctico", "Otro"];
+    const validPriorities = ["Alta", "Media", "Baja"];
+    
+    parsed = {
+      topic: validTopics.includes(parsed.topic) ? parsed.topic : "Otro",
+      priority: validPriorities.includes(parsed.priority) ? parsed.priority : "Media",
+      summary: parsed.summary || transcription.substring(0, 100) + "...",
+      pendingActions: parsed.pendingActions || "Sin acciones específicas"
+    };
+    
+    console.log('✅ Clasificación general completada y validada:', parsed);
+    return parsed;
+    
+  } catch (error) {
+    console.error('❌ Error classifying general content:', error);
+    
+    // Fallback completo en caso de error
+    const fallback = {
+      topic: "Otro",
+      priority: "Media",
+      summary: transcription.substring(0, 100) + "...",
+      pendingActions: "Revisar manualmente"
+    };
+    
+    console.log('🔄 Usando fallback (general):', fallback);
+    return fallback;
+  }
+}
