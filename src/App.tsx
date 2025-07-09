@@ -4,12 +4,14 @@ import { RecordingsList } from './components/RecordingsList';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { CourseManager } from './components/CourseManager';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
-import { transcribeAudio, classifyContent } from './services/openai';
+import { transcribeAudio, classifyContent, classifyGeneralContent } from './services/openai';
 import { appendToGoogleSheet, listGoogleSheetsTabs, createGoogleSheetTab, renameGoogleSheetTab } from './services/googleSheets';
 import type { AudioRecording } from './types';
 import { BookOpen, Settings, AlertTriangle } from 'lucide-react';
 
 type ProcessingStatus = 'idle' | 'transcribing' | 'classifying' | 'uploading' | 'success' | 'error';
+
+const GENERAL_SHEET_NAME = 'General';
 
 function App() {
   const { isRecording, recordings, startRecording, stopRecording, deleteRecording } = useAudioRecorder();
@@ -50,27 +52,51 @@ function App() {
     // Cargar hojas disponibles si la configuración está completa
     if (status.googleSheetId && status.serviceAccount && status.privateKey) {
       loadAvailableSheets();
+      ensureGeneralSheetExists();
     }
   }, []);
+
+  const ensureGeneralSheetExists = async () => {
+    try {
+      console.log('🔍 Verificando existencia de hoja General...');
+      const sheets = await listGoogleSheetsTabs();
+      
+      if (!sheets.includes(GENERAL_SHEET_NAME)) {
+        console.log('📝 Creando hoja General automáticamente...');
+        await createGoogleSheetTab(GENERAL_SHEET_NAME, true);
+        console.log('✅ Hoja General creada exitosamente');
+      } else {
+        console.log('✅ Hoja General ya existe');
+      }
+    } catch (error) {
+      console.error('❌ Error verificando/creando hoja General:', error);
+    }
+  };
 
   const loadAvailableSheets = async () => {
     try {
       setIsLoadingSheets(true);
       console.log('📋 Cargando hojas disponibles...');
       const sheets = await listGoogleSheetsTabs();
-      setAvailableSheets(sheets);
+      
+      // Asegurar que la hoja General esté siempre presente
+      const sheetsWithGeneral = sheets.includes(GENERAL_SHEET_NAME) 
+        ? sheets 
+        : [GENERAL_SHEET_NAME, ...sheets];
+      
+      setAvailableSheets(sheetsWithGeneral);
       
       // Si no hay hoja actual seleccionada o no existe, seleccionar la primera
-      if (!currentSheet || !sheets.includes(currentSheet)) {
-        setCurrentSheet(sheets[0] || 'Sheet1');
+      if (!currentSheet || !sheetsWithGeneral.includes(currentSheet)) {
+        setCurrentSheet(sheetsWithGeneral[0] || GENERAL_SHEET_NAME);
       }
       
-      console.log('✅ Hojas cargadas:', sheets);
+      console.log('✅ Hojas cargadas:', sheetsWithGeneral);
     } catch (error) {
       console.error('❌ Error cargando hojas:', error);
       // En caso de error, mantener configuración por defecto
-      setAvailableSheets(['Sheet1']);
-      setCurrentSheet('Sheet1');
+      setAvailableSheets([GENERAL_SHEET_NAME, 'Sheet1']);
+      setCurrentSheet(GENERAL_SHEET_NAME);
     } finally {
       setIsLoadingSheets(false);
     }
@@ -79,7 +105,8 @@ function App() {
   const handleCreateSheet = async (sheetName: string) => {
     try {
       console.log('📝 Creando nueva hoja:', sheetName);
-      await createGoogleSheetTab(sheetName);
+      const isGeneral = sheetName === GENERAL_SHEET_NAME;
+      await createGoogleSheetTab(sheetName, isGeneral);
       
       // Recargar la lista de hojas
       await loadAvailableSheets();
@@ -124,13 +151,19 @@ function App() {
   const handleDeleteSheet = (sheetName: string) => {
     console.log('🗑️ Eliminando hoja de la interfaz:', sheetName);
     
+    // No permitir eliminar la hoja General
+    if (sheetName === GENERAL_SHEET_NAME) {
+      alert('No se puede eliminar la hoja General del sistema');
+      return;
+    }
+    
     // Remover de la lista local (no de Google Sheets)
     const updatedSheets = availableSheets.filter(sheet => sheet !== sheetName);
     setAvailableSheets(updatedSheets);
     
     // Si la hoja eliminada era la actual, seleccionar otra
     if (currentSheet === sheetName) {
-      const newCurrentSheet = updatedSheets[0] || 'Sheet1';
+      const newCurrentSheet = updatedSheets[0] || GENERAL_SHEET_NAME;
       setCurrentSheet(newCurrentSheet);
       console.log('🔄 Cambiando a hoja:', newCurrentSheet);
     }
@@ -172,60 +205,93 @@ function App() {
       const transcription = await transcribeAudio(recording.blob);
       setDebugInfo(`✅ Transcripción completada: "${transcription.substring(0, 50)}..."`);
       
-      // 2. Clasificar contenido
+      // 2. Clasificar contenido según el tipo de hoja
       setProcessingStatus('classifying');
-      setDebugInfo('Clasificando contenido con IA...');
-      console.log('🤖 Paso 2: Clasificando contenido...');
-      const classification = await classifyContent(transcription);
-      setDebugInfo(`✅ Clasificación completada: ${classification.students?.length || 0} estudiante(s) detectado(s)`);
-
-      // 3. Preparar datos para Google Sheets
-      // Si hay múltiples estudiantes, crear una fila por cada uno
-      const studentsData = classification.students || [];
+      const isGeneralSheet = currentSheet === GENERAL_SHEET_NAME;
       
-      if (studentsData.length === 0) {
-        // Fallback si no se detectaron estudiantes
-        const sheetData = [
+      if (isGeneralSheet) {
+        // Clasificación para notas generales
+        setDebugInfo('Clasificando nota general con IA...');
+        console.log('🤖 Paso 2: Clasificando contenido general...');
+        const generalClassification = await classifyGeneralContent(transcription);
+        setDebugInfo(`✅ Clasificación general completada: ${generalClassification.topic}`);
+
+        // 3. Preparar datos para hoja General
+        const generalSheetData = [
           new Date().toLocaleString('es-ES'),
           Math.round(recording.duration),
           transcription,
-          'No detectado',
-          'Otro',
-          'Neutral',
-          classification.generalSummary || transcription.substring(0, 100) + '...',
-          classification.generalActions || ''
+          generalClassification.topic,
+          generalClassification.priority,
+          generalClassification.pendingActions,
+          generalClassification.summary
         ];
         
-        setDebugInfo('Preparando datos para Google Sheets (sin estudiantes detectados)...');
-        console.log('📊 Datos preparados (sin estudiantes):', sheetData);
+        setDebugInfo('Preparando datos para hoja General...');
+        console.log('📊 Datos preparados (General):', generalSheetData);
         
         setProcessingStatus('uploading');
         setDebugInfo(`Enviando a Google Sheets (${currentSheet})...`);
-        await appendToGoogleSheet([sheetData], currentSheet);
-      } else {
-        // Crear una fila por cada estudiante
-        const allSheetData = studentsData.map((student, index) => [
-          new Date().toLocaleString('es-ES'),
-          Math.round(recording.duration),
-          index === 0 ? transcription : `[Continuación] ${transcription}`,
-          student.name,
-          student.category,
-          student.sentiment,
-          student.summary + (classification.generalSummary ? ` | General: ${classification.generalSummary}` : ''),
-          student.suggestedActions + (classification.generalActions ? ` | General: ${classification.generalActions}` : '')
-        ]);
+        await appendToGoogleSheet([generalSheetData], currentSheet);
         
-        setDebugInfo(`Preparando datos para ${studentsData.length} estudiante(s)...`);
-        console.log('📊 Datos preparados (múltiples estudiantes):', allSheetData);
+        setProcessingStatus('success');
+        setDebugInfo(`✅ ¡Nota general procesada! Registro añadido a ${currentSheet}.`);
+      } else {
+        // Clasificación para notas de estudiantes (comportamiento original)
+        setDebugInfo('Clasificando contenido con IA...');
+        console.log('🤖 Paso 2: Clasificando contenido...');
+        const classification = await classifyContent(transcription);
+        setDebugInfo(`✅ Clasificación completada: ${classification.students?.length || 0} estudiante(s) detectado(s)`);
+
+        // 3. Preparar datos para Google Sheets
+        // Si hay múltiples estudiantes, crear una fila por cada uno
+        const studentsData = classification.students || [];
+        
+        if (studentsData.length === 0) {
+          // Fallback si no se detectaron estudiantes
+          const sheetData = [
+            new Date().toLocaleString('es-ES'),
+            Math.round(recording.duration),
+            transcription,
+            'No detectado',
+            'Otro',
+            'Neutral',
+            classification.generalSummary || transcription.substring(0, 100) + '...',
+            classification.generalActions || ''
+          ];
+          
+          setDebugInfo('Preparando datos para Google Sheets (sin estudiantes detectados)...');
+          console.log('📊 Datos preparados (sin estudiantes):', sheetData);
+          
+          setProcessingStatus('uploading');
+          setDebugInfo(`Enviando a Google Sheets (${currentSheet})...`);
+          await appendToGoogleSheet([sheetData], currentSheet);
+        } else {
+          // Crear una fila por cada estudiante
+          const allSheetData = studentsData.map((student, index) => [
+            new Date().toLocaleString('es-ES'),
+            Math.round(recording.duration),
+            index === 0 ? transcription : `[Continuación] ${transcription}`,
+            student.name,
+            student.category,
+            student.sentiment,
+            student.summary + (classification.generalSummary ? ` | General: ${classification.generalSummary}` : ''),
+            student.suggestedActions + (classification.generalActions ? ` | General: ${classification.generalActions}` : '')
+          ]);
+          
+          setDebugInfo(`Preparando datos para ${studentsData.length} estudiante(s)...`);
+          console.log('📊 Datos preparados (múltiples estudiantes):', allSheetData);
+          
+          setProcessingStatus('uploading');
+          setDebugInfo(`Enviando ${studentsData.length} fila(s) a Google Sheets (${currentSheet})...`);
+          await appendToGoogleSheet(allSheetData, currentSheet);
+        }
         
         setProcessingStatus('uploading');
-        setDebugInfo(`Enviando ${studentsData.length} fila(s) a Google Sheets (${currentSheet})...`);
-        await appendToGoogleSheet(allSheetData, currentSheet);
+        setProcessingStatus('success');
+        setDebugInfo(`✅ ¡Proceso completado! ${studentsData.length || 1} registro(s) añadido(s).`);
       }
-
-
-      setProcessingStatus('success');
-      setDebugInfo(`✅ ¡Proceso completado! ${studentsData.length || 1} registro(s) añadido(s).`);
+      
       console.log('🎉 Proceso completado exitosamente!');
       
       // Limpiar el estado después de 3 segundos
@@ -313,13 +379,14 @@ function App() {
               onRecoverSheet={handleRecoverSheet}
               onRefreshSheets={loadAvailableSheets}
               isLoading={isLoadingSheets}
+              generalSheetName={GENERAL_SHEET_NAME}
             />
           </div>
           
           {/* Recording Section */}
           <div className="xl:col-span-1 bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-6">
-              Grabar Nueva Nota
+              {currentSheet === GENERAL_SHEET_NAME ? 'Grabar Nota General' : 'Grabar Nueva Nota'}
             </h2>
             
             <div className="flex flex-col items-center space-y-6">
@@ -346,12 +413,21 @@ function App() {
             {/* Instructions */}
             <div className="mt-8 p-4 bg-gray-50 rounded-lg">
               <h3 className="font-medium text-gray-800 mb-2">Instrucciones:</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Menciona claramente los nombres de los estudiantes</li>
-                <li>• Describe el comportamiento o situación observada</li>
-                <li>• Habla de forma clara y pausada</li>
-                <li>• Cada grabación se procesará automáticamente</li>
-              </ul>
+              {currentSheet === GENERAL_SHEET_NAME ? (
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Describe tu trabajo en el aula o tareas pendientes</li>
+                  <li>• Menciona la prioridad y acciones necesarias</li>
+                  <li>• Incluye reflexiones sobre metodología o gestión</li>
+                  <li>• Habla de forma clara y pausada</li>
+                </ul>
+              ) : (
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Menciona claramente los nombres de los estudiantes</li>
+                  <li>• Describe el comportamiento o situación observada</li>
+                  <li>• Habla de forma clara y pausada</li>
+                  <li>• Cada grabación se procesará automáticamente</li>
+                </ul>
+              )}
             </div>
           </div>
 
@@ -406,9 +482,14 @@ function App() {
           </div>
           
           <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-2">Clasificación IA</h3>
+            <h3 className="font-semibold text-gray-800 mb-2">
+              {currentSheet === GENERAL_SHEET_NAME ? 'Análisis General' : 'Clasificación IA'}
+            </h3>
             <p className="text-sm text-gray-600">
-              Extrae estudiantes, categorías y sentimientos del contenido
+              {currentSheet === GENERAL_SHEET_NAME 
+                ? 'Identifica temas, prioridades y acciones pendientes'
+                : 'Extrae estudiantes, categorías y sentimientos del contenido'
+              }
             </p>
           </div>
           

@@ -34,3 +34,20 @@ export interface ProcessedNote {
   summary: string;
   suggestedActions: string;
 }
+
+export interface GeneralClassification {
+  topic: 'Gestión de Aula' | 'Planificación de Clases' | 'Administrativo' | 'Comunicación con Padres' | 'Reflexión Personal' | 'Evaluación' | 'Material Didáctico' | 'Otro';
+  priority: 'Alta' | 'Media' | 'Baja';
+  summary: string;
+  pendingActions: string;
+}
+
+export interface ProcessedGeneralNote {
+  timestamp: string;
+  duration: number;
+  transcription: string;
+  topic: string;
+  priority: string;
+  pendingActions: string;
+  summary: string;
+}

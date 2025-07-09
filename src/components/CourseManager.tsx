@@ -11,6 +11,7 @@ interface CourseManagerProps {
   onRecoverSheet: (sheetName: string) => void;
   onRefreshSheets: () => Promise<void>;
   isLoading: boolean;
+  generalSheetName: string;
 }
 
 export function CourseManager({
@@ -22,7 +23,8 @@ export function CourseManager({
   onDeleteSheet,
   onRecoverSheet,
   onRefreshSheets,
-  isLoading
+  isLoading,
+  generalSheetName
 }: CourseManagerProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [newSheetName, setNewSheetName] = useState('');
@@ -96,6 +98,10 @@ export function CourseManager({
       return;
     }
 
+    if (newSheetName.trim() === generalSheetName) {
+      setCreateError('No puedes crear un curso con el nombre reservado "General"');
+      return;
+    }
     try {
       setIsCreatingSheet(true);
       setCreateError('');
@@ -116,6 +122,10 @@ export function CourseManager({
   };
 
   const startEditing = (sheetName: string) => {
+    // No permitir editar la hoja General
+    if (sheetName === generalSheetName) {
+      return;
+    }
     setEditingSheet(sheetName);
     setEditName(sheetName);
     setEditError('');
@@ -138,6 +148,10 @@ export function CourseManager({
       return;
     }
 
+    if (editName.trim() === generalSheetName) {
+      setEditError('No puedes usar el nombre reservado "General"');
+      return;
+    }
     try {
       setIsRenaming(true);
       setEditError('');
@@ -157,6 +171,10 @@ export function CourseManager({
   };
 
   const handleDelete = (sheetName: string) => {
+    // No permitir eliminar la hoja General
+    if (sheetName === generalSheetName) {
+      return;
+    }
     if (confirm(`¿Estás seguro de que quieres eliminar el curso "${sheetName}" de la interfaz?\n\nNota: Los datos en Google Sheets se mantendrán intactos.`)) {
       onDeleteSheet(sheetName);
       setActiveMenu(null);
@@ -174,6 +192,19 @@ export function CourseManager({
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  const getSheetIcon = (sheetName: string) => {
+    if (sheetName === generalSheetName) {
+      return <div className="w-2 h-2 bg-purple-500 rounded-full"></div>;
+    }
+    return <div className="w-2 h-2 bg-blue-500 rounded-full"></div>;
+  };
+
+  const getSheetDescription = (sheetName: string) => {
+    if (sheetName === generalSheetName) {
+      return 'Notas generales del aula';
+    }
+    return 'Notas de estudiantes';
+  };
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
