@@ -152,7 +152,7 @@ export async function listGoogleSheetsTabs(): Promise<string[]> {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ Error obteniendo hojas:', errorData);
-      throw new Error(`Error obteniendo hojas: ${errorData.error?.message || 'Error desconocido'}`);
+      throw new Error(errorData.error?.message || 'Error desconocido');
     }
 
     const data = await response.json();
