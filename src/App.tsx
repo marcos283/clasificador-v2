@@ -380,7 +380,6 @@ function App() {
                 />
               )}
             </div>
-            </button>
           </div>
         </div>
       </header>
