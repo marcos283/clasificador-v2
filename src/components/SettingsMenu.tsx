@@ -219,11 +219,15 @@ export function SettingsMenu({
   // Cerrar menú al hacer click fuera
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest('.settings-menu')) {
-        onClose();
-      }
+      // Pequeño delay para permitir que el click del botón se procese primero
+      setTimeout(() => {
+        const target = event.target as Element;
+        if (!target.closest('.settings-menu') && !target.closest('[data-settings-button]')) {
+          onClose();
+        }
+      }, 0);
     };
+    
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [onClose]);

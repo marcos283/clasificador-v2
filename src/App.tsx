@@ -356,6 +356,7 @@ function App() {
             {/* Settings Menu Button */}
             <div className="relative">
               <button
+                data-settings-button
                 onClick={() => setShowSettingsMenu(!showSettingsMenu)}
                 className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -404,51 +405,51 @@ function App() {
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 py-8">
         {/* Current Course Display */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border ${getSheetColor(currentSheet)}`}>
             <div className={`w-2 h-2 rounded-full ${currentSheet === GENERAL_SHEET_NAME ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
             <span className="text-sm font-medium">
               Curso activo: {getSheetDisplayName(currentSheet)}
             </span>
           </div>
+        </div>
+
+        {/* Recording Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-6">
+            {currentSheet === GENERAL_SHEET_NAME ? 'Grabar Nota General' : 'Grabar Nueva Nota'}
+          </h2>
           
-          {/* Recording Section */}
-          <div className="xl:col-span-1 bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-6">
-              {currentSheet === GENERAL_SHEET_NAME ? 'Grabar Nota General' : 'Grabar Nueva Nota'}
-            </h2>
-            
-            <div className="flex flex-col items-center space-y-6">
-              <AudioRecorder
-                isRecording={isRecording}
-                onStartRecording={startRecording}
-                onStopRecording={stopRecording}
-                isProcessing={isProcessing}
-              />
-              
-              <ProcessingStatus 
-                status={processingStatus} 
-                error={processingError}
-              />
-
-              {/* Debug Info */}
-              {debugInfo && (
-                <div className="w-full p-3 bg-gray-50 rounded-lg border">
-                  <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Recordings List */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <RecordingsList
-              recordings={recordings}
-              onDeleteRecording={deleteRecording}
-              onProcessRecording={processRecording}
+          <div className="flex flex-col items-center space-y-6">
+            <AudioRecorder
+              isRecording={isRecording}
+              onStartRecording={startRecording}
+              onStopRecording={stopRecording}
               isProcessing={isProcessing}
             />
+            
+            <ProcessingStatus 
+              status={processingStatus} 
+              error={processingError}
+            />
+
+            {/* Debug Info */}
+            {debugInfo && (
+              <div className="w-full p-3 bg-gray-50 rounded-lg border">
+                <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Recordings List */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <RecordingsList
+            recordings={recordings}
+            onDeleteRecording={deleteRecording}
+            onProcessRecording={processRecording}
+            isProcessing={isProcessing}
+          />
         </div>
       </main>
     </div>
