@@ -426,50 +426,29 @@ function App() {
                 isProcessing={isProcessing}
               />
               
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        {/* Current Course Display */}
-        <div className={`mb-6 p-4 rounded-lg border-2 ${getSheetColor(currentSheet)}`}>
-          <div className="flex items-center justify-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${currentSheet === GENERAL_SHEET_NAME ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
-            <span className="font-semibold text-lg">{getSheetDisplayName(currentSheet)}</span>
-          </div>
-          <p className="text-center text-sm mt-1 opacity-75">
-            {currentSheet === GENERAL_SHEET_NAME ? 'Notas generales del aula' : 'Notas sobre estudiantes'}
-          </p>
-        </div>
+              <ProcessingStatus 
+                status={processingStatus} 
+                error={processingError}
+              />
 
-        {/* Recording Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-          <div className="flex flex-col items-center space-y-6">
-            <AudioRecorder
-              isRecording={isRecording}
-              onStartRecording={startRecording}
-              onStopRecording={stopRecording}
+              {/* Debug Info */}
+              {debugInfo && (
+                <div className="w-full p-3 bg-gray-50 rounded-lg border">
+                  <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recordings List */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <RecordingsList
+              recordings={recordings}
+              onDeleteRecording={deleteRecording}
+              onProcessRecording={processRecording}
               isProcessing={isProcessing}
             />
-            
-            <ProcessingStatus 
-              status={processingStatus} 
-              error={processingError}
-            />
-
-            {/* Debug Info */}
-            {debugInfo && (
-              <div className="w-full p-3 bg-gray-50 rounded-lg border">
-                <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
-              </div>
-            )}
           </div>
-        </div>
-
-        {/* Recordings List */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <RecordingsList
-            recordings={recordings}
-            onDeleteRecording={deleteRecording}
-            onProcessRecording={processRecording}
-            isProcessing={isProcessing}
-          />
         </div>
       </main>
     </div>
@@ -477,5 +456,3 @@ function App() {
 }
 
 export default App;
-  )
-}
