@@ -36,7 +36,7 @@ export interface ProcessedNote {
 }
 
 export interface GeneralClassification {
-  topic: 'Gestión de Aula' | 'Planificación de Clases' | 'Administrativo' | 'Comunicación con Padres' | 'Reflexión Personal' | 'Evaluación' | 'Material Didáctico' | 'Otro';
+  topic: 'Trabajo' | 'Educación' | 'Personal' | 'Administrativo' | 'Reuniones' | 'Proyectos' | 'Recordatorios' | 'Ideas' | 'Tareas' | 'Otro';
   priority: 'Alta' | 'Media' | 'Baja';
   summary: string;
   pendingActions: string;

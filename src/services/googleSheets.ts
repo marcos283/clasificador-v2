@@ -232,7 +232,7 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
       'Timestamp',
       'Duración (seg)',
       'Transcripción',
-      'Tema/Área',
+      'Tema',
       'Prioridad',
       'Acciones Pendientes',
       'Resumen'

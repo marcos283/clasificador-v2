@@ -250,11 +250,11 @@ Eres un asistente especializado en analizar notas de voz de profesores sobre su 
 INSTRUCCIONES CRÍTICAS:
 1. Analiza la transcripción e identifica el tema principal, prioridad y acciones pendientes
 2. Responde ÚNICAMENTE en formato JSON válido, sin texto adicional
-3. Clasifica según las categorías específicas para notas generales de profesores
+3. Clasifica de manera amplia y práctica, no te limites solo a temas educativos
 
 FORMATO DE RESPUESTA REQUERIDO:
 {
-  "topic": "Gestión de Aula|Planificación de Clases|Administrativo|Comunicación con Padres|Reflexión Personal|Evaluación|Material Didáctico|Otro",
+  "topic": "Trabajo|Educación|Personal|Administrativo|Reuniones|Proyectos|Recordatorios|Ideas|Tareas|Otro",
   "priority": "Alta|Media|Baja",
   "summary": "Resumen conciso de la nota",
   "pendingActions": "Lista de acciones específicas a realizar"
@@ -263,13 +263,15 @@ FORMATO DE RESPUESTA REQUERIDO:
 CRITERIOS DE CLASIFICACIÓN:
 
 TEMA/ÁREA:
-- "Gestión de Aula": Disciplina, organización del espacio, rutinas, comportamiento grupal
-- "Planificación de Clases": Preparación de lecciones, secuencias didácticas, objetivos
-- "Administrativo": Reportes, documentación, reuniones, trámites
-- "Comunicación con Padres": Contactos familiares, reuniones, informes a padres
-- "Reflexión Personal": Autoevaluación, mejoras metodológicas, desarrollo profesional
-- "Evaluación": Exámenes, calificaciones, rúbricas, retroalimentación
-- "Material Didáctico": Recursos, materiales, tecnología educativa
+- "Trabajo": Tareas laborales, proyectos profesionales, responsabilidades del trabajo
+- "Educación": Clases, estudiantes, evaluaciones, material didáctico, planificación educativa
+- "Personal": Reflexiones personales, desarrollo profesional, bienestar, salud
+- "Administrativo": Documentos, trámites, reportes, papeleo, gestiones burocráticas
+- "Reuniones": Citas, encuentros, conferencias, llamadas programadas
+- "Proyectos": Iniciativas específicas, planes a largo plazo, colaboraciones
+- "Recordatorios": Cosas que no se deben olvidar, fechas importantes, compromisos
+- "Ideas": Pensamientos creativos, propuestas, inspiración, lluvia de ideas
+- "Tareas": Actividades específicas por hacer, pendientes concretos
 - "Otro": Cualquier tema que no encaje en las categorías anteriores
 
 PRIORIDAD:
@@ -279,31 +281,31 @@ PRIORIDAD:
 
 EJEMPLOS:
 
-Transcripción: "Necesito preparar el examen de matemáticas para la próxima semana y revisar las rúbricas de evaluación"
+Transcripción: "Tengo que comprar leche, llamar al dentista y no olvidar la reunión del viernes"
 Respuesta:
 {
-  "topic": "Evaluación",
+  "topic": "Recordatorios",
+  "priority": "Media",
+  "summary": "Lista de tareas personales y cita médica pendiente",
+  "pendingActions": "1. Comprar leche, 2. Llamar al dentista para cita, 3. Confirmar asistencia a reunión del viernes"
+}
+
+Transcripción: "Se me ocurrió una idea genial para el proyecto de la empresa, podríamos usar inteligencia artificial"
+Respuesta:
+{
+  "topic": "Ideas",
+  "priority": "Baja",
+  "summary": "Propuesta de integrar IA en proyecto empresarial",
+  "pendingActions": "1. Investigar herramientas de IA disponibles, 2. Preparar propuesta detallada, 3. Programar reunión con equipo"
+}
+
+Transcripción: "Necesito terminar el informe para mañana y preparar la presentación para el cliente"
+Respuesta:
+{
+  "topic": "Trabajo",
   "priority": "Alta",
-  "summary": "Preparación de examen de matemáticas y revisión de rúbricas para la próxima semana",
-  "pendingActions": "1. Diseñar preguntas del examen de matemáticas, 2. Revisar y ajustar rúbricas de evaluación, 3. Programar fecha de aplicación"
-}
-
-Transcripción: "Los estudiantes están muy distraídos en las últimas clases, necesito cambiar la disposición de los asientos"
-Respuesta:
-{
-  "topic": "Gestión de Aula",
-  "priority": "Media",
-  "summary": "Problema de distracción estudiantil requiere reorganización del aula",
-  "pendingActions": "1. Diseñar nueva distribución de asientos, 2. Implementar cambios en el aula, 3. Observar mejoras en atención"
-}
-
-Transcripción: "Recordar llamar a la mamá de Pedro para comentar sobre su progreso en lectura"
-Respuesta:
-{
-  "topic": "Comunicación con Padres",
-  "priority": "Media",
-  "summary": "Contactar a madre de Pedro sobre progreso en lectura",
-  "pendingActions": "1. Llamar a la madre de Pedro, 2. Preparar informe de progreso en lectura, 3. Programar seguimiento"
+  "summary": "Finalizar informe urgente y preparar presentación para cliente",
+  "pendingActions": "1. Completar informe antes de mañana, 2. Crear presentación para cliente, 3. Revisar materiales de apoyo"
 }
 
 AHORA ANALIZA ESTA TRANSCRIPCIÓN:
@@ -354,7 +356,7 @@ RESPONDE SOLO CON EL JSON:`;
     }
     
     // Validar y normalizar estructura
-    const validTopics = ["Gestión de Aula", "Planificación de Clases", "Administrativo", "Comunicación con Padres", "Reflexión Personal", "Evaluación", "Material Didáctico", "Otro"];
+    const validTopics = ["Trabajo", "Educación", "Personal", "Administrativo", "Reuniones", "Proyectos", "Recordatorios", "Ideas", "Tareas", "Otro"];
     const validPriorities = ["Alta", "Media", "Baja"];
     
     parsed = {
