@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { AudioRecorder } from './components/AudioRecorder';
 import { RecordingsList } from './components/RecordingsList';
 import { ProcessingStatus } from './components/ProcessingStatus';
-import { CourseManager } from './components/CourseManager';
+import { SettingsMenu } from './components/SettingsMenu';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
 import { transcribeAudio, classifyContent, classifyGeneralContent } from './services/openai';
 import { appendToGoogleSheet, listGoogleSheetsTabs, createGoogleSheetTab, renameGoogleSheetTab } from './services/googleSheets';
 import type { AudioRecording } from './types';
-import { BookOpen, Settings, AlertTriangle } from 'lucide-react';
+import { BookOpen, ChevronDown, AlertTriangle } from 'lucide-react';
 
 type ProcessingStatus = 'idle' | 'transcribing' | 'classifying' | 'uploading' | 'success' | 'error';
 
@@ -21,6 +21,7 @@ function App() {
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [currentSheet, setCurrentSheet] = useState<string>('Sheet1');
   const [isLoadingSheets, setIsLoadingSheets] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [configStatus, setConfigStatus] = useState({
     openai: false,
     googleSheetId: false,
@@ -321,11 +322,25 @@ function App() {
   const isProcessing = processingStatus !== 'idle' && processingStatus !== 'success' && processingStatus !== 'error';
   const hasConfigIssues = !configStatus.openai || !configStatus.googleSheetId || !configStatus.serviceAccount || !configStatus.privateKey;
 
+  const getSheetDisplayName = (sheetName: string) => {
+    if (sheetName === GENERAL_SHEET_NAME) {
+      return 'General';
+    }
+    return sheetName;
+  };
+
+  const getSheetColor = (sheetName: string) => {
+    if (sheetName === GENERAL_SHEET_NAME) {
+      return 'text-purple-600 bg-purple-50';
+    }
+    return 'text-blue-600 bg-blue-50';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-500 p-2 rounded-lg">
@@ -335,13 +350,36 @@ function App() {
                 <h1 className="text-xl font-bold text-gray-900">
                   Clasificador de Notas de Voz
                 </h1>
-                <p className="text-sm text-gray-600">
-                  Seguimiento inteligente de estudiantes
-                </p>
               </div>
             </div>
-            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <Settings className="w-5 h-5" />
+            
+            {/* Settings Menu Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <span className="text-sm font-medium">Configuración</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showSettingsMenu ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showSettingsMenu && (
+                <SettingsMenu
+                  availableSheets={availableSheets}
+                  currentSheet={currentSheet}
+                  onSheetChange={handleSheetChange}
+                  onCreateSheet={handleCreateSheet}
+                  onRenameSheet={handleRenameSheet}
+                  onDeleteSheet={handleDeleteSheet}
+                  onRecoverSheet={handleRecoverSheet}
+                  onRefreshSheets={loadAvailableSheets}
+                  isLoading={isLoadingSheets}
+                  generalSheetName={GENERAL_SHEET_NAME}
+                  configStatus={configStatus}
+                  onClose={() => setShowSettingsMenu(false)}
+                />
+              )}
+            </div>
             </button>
           </div>
         </div>
@@ -350,7 +388,7 @@ function App() {
       {/* Configuration Warning */}
       {hasConfigIssues && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-          <div className="max-w-4xl mx-auto flex">
+          <div className="max-w-2xl mx-auto flex">
             <div className="flex-shrink-0">
               <AlertTriangle className="h-5 w-5 text-yellow-400" />
             </div>
@@ -365,22 +403,14 @@ function App() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Course Management Section */}
-          <div className="xl:col-span-1">
-            <CourseManager
-              availableSheets={availableSheets}
-              currentSheet={currentSheet}
-              onSheetChange={handleSheetChange}
-              onCreateSheet={handleCreateSheet}
-              onRenameSheet={handleRenameSheet}
-              onDeleteSheet={handleDeleteSheet}
-              onRecoverSheet={handleRecoverSheet}
-              onRefreshSheets={loadAvailableSheets}
-              isLoading={isLoadingSheets}
-              generalSheetName={GENERAL_SHEET_NAME}
-            />
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        {/* Current Course Display */}
+        <div className="mb-8">
+          <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border ${getSheetColor(currentSheet)}`}>
+            <div className={`w-2 h-2 rounded-full ${currentSheet === GENERAL_SHEET_NAME ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
+            <span className="text-sm font-medium">
+              Curso activo: {getSheetDisplayName(currentSheet)}
+            </span>
           </div>
           
           {/* Recording Section */}
@@ -397,108 +427,50 @@ function App() {
                 isProcessing={isProcessing}
               />
               
-              <ProcessingStatus 
-                status={processingStatus} 
-                error={processingError}
-              />
-
-              {/* Debug Info */}
-              {debugInfo && (
-                <div className="w-full p-3 bg-gray-50 rounded-lg border">
-                  <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Instructions */}
-            <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-gray-800 mb-2">Instrucciones:</h3>
-              {currentSheet === GENERAL_SHEET_NAME ? (
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Describe tu trabajo en el aula o tareas pendientes</li>
-                  <li>• Menciona la prioridad y acciones necesarias</li>
-                  <li>• Incluye reflexiones sobre metodología o gestión</li>
-                  <li>• Habla de forma clara y pausada</li>
-                </ul>
-              ) : (
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Menciona claramente los nombres de los estudiantes</li>
-                  <li>• Describe el comportamiento o situación observada</li>
-                  <li>• Habla de forma clara y pausada</li>
-                  <li>• Cada grabación se procesará automáticamente</li>
-                </ul>
-              )}
-            </div>
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        {/* Current Course Display */}
+        <div className={`mb-6 p-4 rounded-lg border-2 ${getSheetColor(currentSheet)}`}>
+          <div className="flex items-center justify-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${currentSheet === GENERAL_SHEET_NAME ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
+            <span className="font-semibold text-lg">{getSheetDisplayName(currentSheet)}</span>
           </div>
+          <p className="text-center text-sm mt-1 opacity-75">
+            {currentSheet === GENERAL_SHEET_NAME ? 'Notas generales del aula' : 'Notas sobre estudiantes'}
+          </p>
+        </div>
 
-          {/* Recordings List */}
-          <div className="xl:col-span-1 bg-white rounded-xl shadow-lg p-6">
-            <RecordingsList
-              recordings={recordings}
-              onDeleteRecording={deleteRecording}
-              onProcessRecording={processRecording}
+        {/* Recording Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+          <div className="flex flex-col items-center space-y-6">
+            <AudioRecorder
+              isRecording={isRecording}
+              onStartRecording={startRecording}
+              onStopRecording={stopRecording}
               isProcessing={isProcessing}
             />
+            
+            <ProcessingStatus 
+              status={processingStatus} 
+              error={processingError}
+            />
+
+            {/* Debug Info */}
+            {debugInfo && (
+              <div className="w-full p-3 bg-gray-50 rounded-lg border">
+                <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Configuration Check */}
-        <div className="mt-8 bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="font-semibold text-gray-800 mb-4">Estado de Configuración</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${configStatus.openai ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm">OpenAI API</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${configStatus.googleSheetId ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm">Google Sheet ID</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${configStatus.serviceAccount ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm">Service Account</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${configStatus.privateKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm">Private Key</span>
-            </div>
-          </div>
-          
-          {/* Debug Console Reminder */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-700">
-              💡 <strong>Para debug detallado:</strong> Abre las herramientas de desarrollador (F12) → pestaña Console para ver logs completos
-            </p>
-          </div>
-        </div>
-
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-2">Transcripción</h3>
-            <p className="text-sm text-gray-600">
-              Convierte automáticamente tu voz a texto usando OpenAI Whisper
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-2">
-              {currentSheet === GENERAL_SHEET_NAME ? 'Análisis General' : 'Clasificación IA'}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {currentSheet === GENERAL_SHEET_NAME 
-                ? 'Identifica temas, prioridades y acciones pendientes'
-                : 'Extrae estudiantes, categorías y sentimientos del contenido'
-              }
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-2">Google Sheets</h3>
-            <p className="text-sm text-gray-600">
-              Organiza automáticamente los datos en tu hoja de cálculo
-            </p>
-          </div>
+        {/* Recordings List */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <RecordingsList
+            recordings={recordings}
+            onDeleteRecording={deleteRecording}
+            onProcessRecording={processRecording}
+            isProcessing={isProcessing}
+          />
         </div>
       </main>
     </div>
