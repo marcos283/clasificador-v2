@@ -249,28 +249,6 @@ export function SettingsMenu({
         </div>
       </div>
 
-      {/* Configuration Status */}
-      <div className="p-4 border-b border-gray-200">
-        <h4 className="font-medium text-gray-800 mb-3">Estado de Configuración</h4>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${configStatus.openai ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">OpenAI API</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${configStatus.googleSheetId ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">Google Sheet ID</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${configStatus.serviceAccount ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">Service Account</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${configStatus.privateKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">Private Key</span>
-          </div>
-        </div>
-      </div>
 
       {/* Course Management */}
       <div className="p-4">
@@ -540,6 +518,29 @@ export function SettingsMenu({
             <li>• Puedes renombrar cursos (actualiza Google Sheets)</li>
             <li>• "Eliminar" solo quita de la interfaz, no de Google Sheets</li>
           </ul>
+        </div>
+      </div>
+
+      {/* Configuration Status - Moved to end */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <h4 className="font-medium text-gray-800 mb-3">Estado de Configuración</h4>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${configStatus.openai ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs">OpenAI API</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${configStatus.googleSheetId ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs">Google Sheet ID</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${configStatus.serviceAccount ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs">Service Account</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${configStatus.privateKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs">Private Key</span>
+          </div>
         </div>
       </div>
     </div>
