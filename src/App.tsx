@@ -219,7 +219,8 @@ function App() {
 
         // 3. Preparar datos para hoja General
         const generalSheetData = [
-          new Date().toLocaleString('es-ES'),
+          new Date().toLocaleDateString('es-ES'),
+          new Date().toLocaleTimeString('es-ES'),
           Math.round(recording.duration),
           transcription,
           generalClassification.topic,
@@ -251,7 +252,8 @@ function App() {
         if (studentsData.length === 0) {
           // Fallback si no se detectaron estudiantes
           const sheetData = [
-            new Date().toLocaleString('es-ES'),
+            new Date().toLocaleDateString('es-ES'),
+            new Date().toLocaleTimeString('es-ES'),
             Math.round(recording.duration),
             transcription,
             'No detectado',
@@ -270,7 +272,8 @@ function App() {
         } else {
           // Crear una fila por cada estudiante
           const allSheetData = studentsData.map((student, index) => [
-            new Date().toLocaleString('es-ES'),
+            new Date().toLocaleDateString('es-ES'),
+            new Date().toLocaleTimeString('es-ES'),
             Math.round(recording.duration),
             index === 0 ? transcription : `[Continuación] ${transcription}`,
             student.name,

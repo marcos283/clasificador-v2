@@ -229,7 +229,8 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
     console.log('📋 Añadiendo encabezados a la hoja:', sheetName);
     
     const headers = isGeneralSheet ? [
-      'Timestamp',
+      'Fecha',
+      'Hora',
       'Duración (seg)',
       'Transcripción',
       'Tema',
@@ -237,7 +238,8 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
       'Acciones Pendientes',
       'Resumen'
     ] : [
-      'Timestamp',
+      'Fecha',
+      'Hora',
       'Duración (seg)',
       'Transcripción',
       'Estudiantes',
@@ -247,7 +249,7 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
       'Acciones'
     ];
 
-    const range = isGeneralSheet ? 'A1:G1' : 'A1:H1';
+    const range = isGeneralSheet ? 'A1:H1' : 'A1:I1';
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!${range}?valueInputOption=RAW`;
     
     const response = await fetch(url, {
@@ -385,7 +387,7 @@ export async function appendToGoogleSheet(data: any[][] | any[], sheetName: stri
     console.log('📝 Datos a enviar:', normalizedData);
     
     // Enviar datos a Google Sheets (hoja específica)
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!A:H:append?valueInputOption=RAW`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!A:I:append?valueInputOption=RAW`;
     console.log('🌐 URL de la API:', url);
     
     const response = await fetch(url, {
