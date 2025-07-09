@@ -233,7 +233,7 @@ export function SettingsMenu({
   }, [onClose]);
 
   return (
-    <div className="settings-menu absolute right-0 top-full mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+    <div className="settings-menu w-full sm:w-96 bg-white border border-gray-200 rounded-t-lg sm:rounded-lg shadow-xl z-50 max-h-[80vh] sm:max-h-96 overflow-y-auto">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -286,7 +286,7 @@ export function SettingsMenu({
 
         {/* Create New Sheet Form */}
         {isCreating && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border mx-1">
             <h5 className="font-medium text-gray-800 mb-2">Crear Nuevo Curso</h5>
             
             <div className="space-y-2">
@@ -332,7 +332,7 @@ export function SettingsMenu({
 
         {/* Recovery Mode */}
         {showRecovery && (
-          <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200 mx-1">
             <div className="flex items-center justify-between mb-3">
               <h5 className="font-medium text-orange-800">Recuperar Cursos</h5>
               <button
@@ -385,7 +385,7 @@ export function SettingsMenu({
               <p className="text-sm">No hay cursos disponibles</p>
             </div>
           ) : (
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+            <div className="space-y-1 max-h-40 sm:max-h-48 overflow-y-auto px-1">
               {availableSheets.map((sheetName) => (
                 <div
                   key={sheetName}
@@ -509,7 +509,7 @@ export function SettingsMenu({
         </div>
 
         {/* Instructions */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg mx-1">
           <h5 className="font-medium text-gray-800 mb-2">Instrucciones:</h5>
           <ul className="text-xs text-gray-600 space-y-1">
             <li>• Cada curso tiene su propia pestaña en Google Sheets</li>
@@ -522,24 +522,24 @@ export function SettingsMenu({
       </div>
 
       {/* Configuration Status - Moved to end */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
+      <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg sm:rounded-b-lg">
         <h4 className="font-medium text-gray-800 mb-3">Estado de Configuración</h4>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${configStatus.openai ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">OpenAI API</span>
+            <span className="truncate">OpenAI API</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${configStatus.googleSheetId ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">Google Sheet ID</span>
+            <span className="truncate">Google Sheet</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${configStatus.serviceAccount ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">Service Account</span>
+            <span className="truncate">Service Account</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${configStatus.privateKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs">Private Key</span>
+            <span className="truncate">Private Key</span>
           </div>
         </div>
       </div>

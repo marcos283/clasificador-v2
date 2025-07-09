@@ -365,20 +365,28 @@ function App() {
               </button>
               
               {showSettingsMenu && (
-                <SettingsMenu
-                  availableSheets={availableSheets}
-                  currentSheet={currentSheet}
-                  onSheetChange={handleSheetChange}
-                  onCreateSheet={handleCreateSheet}
-                  onRenameSheet={handleRenameSheet}
-                  onDeleteSheet={handleDeleteSheet}
-                  onRecoverSheet={handleRecoverSheet}
-                  onRefreshSheets={loadAvailableSheets}
-                  isLoading={isLoadingSheets}
-                  generalSheetName={GENERAL_SHEET_NAME}
-                  configStatus={configStatus}
-                  onClose={() => setShowSettingsMenu(false)}
-                />
+                <div className="fixed inset-0 z-40 sm:relative sm:inset-auto">
+                  {/* Overlay para móvil */}
+                  <div className="fixed inset-0 bg-black bg-opacity-25 sm:hidden" onClick={() => setShowSettingsMenu(false)}></div>
+                  
+                  {/* Menú */}
+                  <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:right-0 sm:top-full sm:left-auto sm:bottom-auto sm:mt-2 sm:w-96">
+                    <SettingsMenu
+                      availableSheets={availableSheets}
+                      currentSheet={currentSheet}
+                      onSheetChange={handleSheetChange}
+                      onCreateSheet={handleCreateSheet}
+                      onRenameSheet={handleRenameSheet}
+                      onDeleteSheet={handleDeleteSheet}
+                      onRecoverSheet={handleRecoverSheet}
+                      onRefreshSheets={loadAvailableSheets}
+                      isLoading={isLoadingSheets}
+                      generalSheetName={GENERAL_SHEET_NAME}
+                      configStatus={configStatus}
+                      onClose={() => setShowSettingsMenu(false)}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
