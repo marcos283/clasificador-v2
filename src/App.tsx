@@ -235,16 +235,21 @@ function App() {
         if (leadsData.length === 0) {
           // Fallback si no se detectaron leads
           const leadSheetData = [
-            new Date().toLocaleDateString('en-GB'), // Timestamp (DD/MM/YYYY)
             null, // Nombre
-            null, // Apellidos  
+            null, // Apellidos
+            null, // DNI
+            null, // Fecha nacimiento
             null, // Teléfono
             null, // Email
-            null, // DNI
-            null, // Fecha Nacimiento
-            null, // Edad
-            'Nuevo', // Estado
-            transcription.substring(0, 200) + (transcription.length > 200 ? '...' : '') // Notas
+            null, // ID de Contacto
+            null, // Situación laboral
+            null, // Curso Terminado
+            null, // Interés
+            null, // Disponibilidad
+            transcription.substring(0, 200) + (transcription.length > 200 ? '...' : ''), // Notas
+            null, // Whatsapp
+            null, // Registro ED
+            new Date().toLocaleDateString('en-GB') // Fecha (DD/MM/YYYY)
           ];
           
           setDebugInfo('Preparando datos para Google Sheets (sin leads detectados)...');
@@ -256,16 +261,21 @@ function App() {
         } else {
           // Crear una fila por cada lead
           const allLeadsData = leadsData.map(lead => [
-            new Date().toLocaleDateString('en-GB'), // Timestamp (DD/MM/YYYY)
             lead.nombre,
             lead.apellidos,
-            lead.telefono,
-            lead.email,
             lead.dni,
             lead.fechaNacimiento,
-            lead.edad,
-            lead.estado,
-            lead.notas
+            lead.telefono,
+            lead.email,
+            lead.idContacto || '',
+            lead.situacionLaboral || '',
+            lead.cursoTerminado || '',
+            lead.interes || '',
+            lead.disponibilidad || '',
+            lead.notas,
+            lead.whatsapp || '',
+            lead.registroED || '',
+            new Date().toLocaleDateString('en-GB') // Timestamp (DD/MM/YYYY) ahora en última posición
           ]);
           
           setDebugInfo(`Preparando datos para ${leadsData.length} lead(s)...`);

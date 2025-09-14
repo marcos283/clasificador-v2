@@ -233,20 +233,25 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
     let range: string;
     
     if (sheetName === 'Leads') {
-      // Encabezados específicos para la hoja de Leads
+      // Encabezados específicos para la hoja de Leads - Nueva estructura
       headers = [
-        'Fecha',
         'Nombre',
         'Apellidos',
+        'DNI',
+        'Fecha nacimiento',
         'Teléfono',
         'Email',
-        'DNI',
-        'Fecha Nacimiento',
-        'Edad',
-        'Estado',
-        'Notas'
+        'ID de Contacto',
+        'Situación laboral',
+        'Curso Terminado',
+        'Interés',
+        'Disponibilidad',
+        'Notas',
+        'Whatsapp',
+        'Registro ED',
+        'Fecha'
       ];
-      range = 'A1:J1';
+      range = 'A1:O1';
     } else if (isGeneralSheet) {
       // Encabezados para hoja General
       headers = [
@@ -415,7 +420,7 @@ export async function appendToGoogleSheet(data: any[][] | any[], sheetName: stri
     
     // Determinar rango según tipo de hoja
     const isLeadsSheet = sheetName === 'Leads';
-    const range = isLeadsSheet ? 'A:J' : 'A:I'; // Leads usa 10 columnas (A-J), otros usan 9 (A-I)
+    const range = isLeadsSheet ? 'A:O' : 'A:I'; // Leads usa 15 columnas (A-O), otros usan 9 (A-I)
     
     // Enviar datos a Google Sheets (hoja específica)
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!${range}:append?valueInputOption=RAW`;
