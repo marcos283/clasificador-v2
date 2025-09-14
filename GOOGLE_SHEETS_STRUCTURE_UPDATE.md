@@ -135,11 +135,30 @@ VITE_GOOGLE_PRIVATE_KEY=your_private_key_here
 - Service Account debe tener permisos de **Editor**
 - Hoja debe estar compartida con el email de Service Account
 
+## Deploy y Producción
+
+### Netlify Configuration
+- **Auto-deploy**: Configurado desde GitHub branch `leads`
+- **Variables de entorno requeridas en Netlify**:
+  ```
+  VITE_OPENAI_API_KEY = sk-proj-...
+  VITE_GOOGLE_SHEET_ID = 1yoG6rp84NHaOwhpiyaYLS7mb0qo89Xf4PBAFY_fA7mM
+  VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL = sheets-access@notas-voz-profesor.iam.gserviceaccount.com
+  VITE_GOOGLE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----..."
+  ```
+- **Build command**: `npm run build`
+- **Publish directory**: `dist`
+
+### Seguridad en Logs
+- **Desarrollo**: Logs detallados para debugging
+- **Producción**: Considerar reducir verbosidad de console.log
+- **Variables sensibles**: Google Sheet ID ocultado en logs (aunque no crítico)
+
 ## Próximos Pasos
 
 1. **Actualizar AI Prompts**: Modificar prompts de clasificación para extraer los nuevos campos
 2. **Testing Extensivo**: Probar con datos reales de producción
-3. **Documentar API**: Actualizar documentación de campos esperados
+3. **Optimizar Logs**: Limpiar console.log para producción
 4. **Migración Producción**: Planificar migración de hojas existentes
 
 ## Versionado
