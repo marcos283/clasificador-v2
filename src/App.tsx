@@ -4,7 +4,7 @@ import { RecordingsList } from './components/RecordingsList';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { SettingsMenu } from './components/SettingsMenu';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
-import { transcribeAudio, classifyContent, classifyGeneralContent } from './services/openai';
+import { transcribeAudio, classifyContent, classifyGeneralContent, classifyLeadsContent } from './services/openai';
 import { appendToGoogleSheet, listGoogleSheetsTabs, createGoogleSheetTab, renameGoogleSheetTab } from './services/googleSheets';
 import type { AudioRecording } from './types';
 import { BookOpen, ChevronDown, AlertTriangle } from 'lucide-react';
@@ -12,12 +12,14 @@ import { BookOpen, ChevronDown, AlertTriangle } from 'lucide-react';
 type ProcessingStatus = 'idle' | 'transcribing' | 'classifying' | 'uploading' | 'success' | 'error';
 
 const GENERAL_SHEET_NAME = 'General';
+const LEADS_SHEET_NAME = 'Leads';
 
 function App() {
   const { isRecording, recordings, startRecording, stopRecording, deleteRecording } = useAudioRecorder();
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
   const [processingError, setProcessingError] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [extractedData, setExtractedData] = useState<any>(null);
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [currentSheet, setCurrentSheet] = useState<string>('Sheet1');
   const [isLoadingSheets, setIsLoadingSheets] = useState(false);
@@ -195,6 +197,7 @@ function App() {
       setProcessingStatus('transcribing');
       setProcessingError('');
       setDebugInfo('Iniciando transcripción...');
+      setExtractedData(null); // Limpiar datos previos
 
       // Verificar configuración antes de procesar
       if (!configStatus.openai) {
@@ -209,8 +212,73 @@ function App() {
       // 2. Clasificar contenido según el tipo de hoja
       setProcessingStatus('classifying');
       const isGeneralSheet = currentSheet === GENERAL_SHEET_NAME;
+      const isLeadsSheet = currentSheet === LEADS_SHEET_NAME;
       
-      if (isGeneralSheet) {
+      if (isLeadsSheet) {
+        // 🆕 NUEVA: Clasificación para leads
+        setDebugInfo('Extrayendo datos de leads con IA...');
+        console.log('🎯 Paso 2: Extrayendo datos de leads...');
+        const leadsClassification = await classifyLeadsContent(transcription);
+        
+        // Guardar datos extraídos para mostrar en pantalla
+        setExtractedData({
+          type: 'leads',
+          transcription: transcription,
+          data: leadsClassification.leads || []
+        });
+        
+        setDebugInfo(`✅ Extracción de leads completada: ${leadsClassification.leads?.length || 0} lead(s) detectado(s)`);
+
+        // 3. Preparar datos para hoja Leads
+        const leadsData = leadsClassification.leads || [];
+        
+        if (leadsData.length === 0) {
+          // Fallback si no se detectaron leads
+          const leadSheetData = [
+            new Date().toLocaleDateString('en-GB'), // Timestamp (DD/MM/YYYY)
+            null, // Nombre
+            null, // Apellidos  
+            null, // Teléfono
+            null, // Email
+            null, // DNI
+            null, // Fecha Nacimiento
+            null, // Edad
+            'Nuevo', // Estado
+            transcription.substring(0, 200) + (transcription.length > 200 ? '...' : '') // Notas
+          ];
+          
+          setDebugInfo('Preparando datos para Google Sheets (sin leads detectados)...');
+          console.log('📊 Datos preparados (sin leads):', leadSheetData);
+          
+          setProcessingStatus('uploading');
+          setDebugInfo(`Enviando a Google Sheets (${currentSheet})...`);
+          await appendToGoogleSheet([leadSheetData], currentSheet);
+        } else {
+          // Crear una fila por cada lead
+          const allLeadsData = leadsData.map(lead => [
+            new Date().toLocaleDateString('en-GB'), // Timestamp (DD/MM/YYYY)
+            lead.nombre,
+            lead.apellidos,
+            lead.telefono,
+            lead.email,
+            lead.dni,
+            lead.fechaNacimiento,
+            lead.edad,
+            lead.estado,
+            lead.notas
+          ]);
+          
+          setDebugInfo(`Preparando datos para ${leadsData.length} lead(s)...`);
+          console.log('📊 Datos preparados (múltiples leads):', allLeadsData);
+          
+          setProcessingStatus('uploading');
+          setDebugInfo(`Enviando ${leadsData.length} lead(s) a Google Sheets (${currentSheet})...`);
+          await appendToGoogleSheet(allLeadsData, currentSheet);
+        }
+        
+        setProcessingStatus('success');
+        setDebugInfo(`✅ ¡Leads procesados! ${leadsData.length || 1} registro(s) añadido(s) a ${currentSheet}.`);
+      } else if (isGeneralSheet) {
         // Clasificación para notas generales
         setDebugInfo('Clasificando nota general con IA...');
         console.log('🤖 Paso 2: Clasificando contenido general...');
@@ -448,6 +516,43 @@ function App() {
             {debugInfo && (
               <div className="w-full p-3 bg-gray-50 rounded-lg border">
                 <p className="text-sm text-gray-700 font-mono">{debugInfo}</p>
+              </div>
+            )}
+
+            {/* Extracted Data Display */}
+            {extractedData && (
+              <div className="w-full p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">📋 Datos Extraídos</h3>
+                
+                {/* Transcription */}
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-700 mb-2">🎙️ Transcripción:</h4>
+                  <p className="text-sm text-gray-600 bg-white p-3 rounded border italic">
+                    "{extractedData.transcription}"
+                  </p>
+                </div>
+
+                {/* Leads Data */}
+                {extractedData.type === 'leads' && extractedData.data.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">👤 Leads Detectados ({extractedData.data.length}):</h4>
+                    {extractedData.data.map((lead: any, index: number) => (
+                      <div key={index} className="bg-white p-3 rounded border mb-3">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><strong>Nombre:</strong> {lead.nombre || '(no especificado)'}</div>
+                          <div><strong>Apellidos:</strong> {lead.apellidos || '(no especificado)'}</div>
+                          <div><strong>Teléfono:</strong> {lead.telefono || '(no especificado)'}</div>
+                          <div><strong>Email:</strong> {lead.email || '(no especificado)'}</div>
+                          <div><strong>DNI:</strong> {lead.dni || '(no especificado)'}</div>
+                          <div><strong>F. Nacimiento:</strong> {lead.fechaNacimiento || '(no especificado)'}</div>
+                          <div><strong>Edad:</strong> {lead.edad || '(no calculada)'}</div>
+                          <div><strong>Estado:</strong> <span className="font-semibold text-blue-600">{lead.estado}</span></div>
+                          <div className="col-span-2"><strong>Notas:</strong> {lead.notas}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

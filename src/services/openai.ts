@@ -384,3 +384,295 @@ RESPONDE SOLO CON EL JSON:`;
     return fallback;
   }
 }
+
+export async function classifyLeadsContent(transcription: string): Promise<any> {
+  try {
+    console.log('🎯 Iniciando extracción de datos de leads con GPT...');
+    console.log('Texto a procesar:', transcription.substring(0, 100) + '...');
+
+    if (!transcription || transcription.trim().length === 0) {
+      throw new Error('No hay texto para procesar');
+    }
+
+    const prompt = `
+Eres un especialista en extraer información de contacto de posibles estudiantes (leads) desde notas de voz dictadas por profesores.
+
+INSTRUCCIONES CRÍTICAS:
+1. Analiza la transcripción y extrae TODOS los datos de contacto mencionados
+2. Identifica múltiples personas si se mencionan varias en la misma nota
+3. Responde ÚNICAMENTE en formato JSON válido, sin texto adicional
+4. Si un dato no se menciona, usa null para ese campo
+5. Infiere el estado del lead basado en el contexto de la conversación
+
+ESTRUCTURA DE DATOS REQUERIDA:
+{
+  "leads": [
+    {
+      "nombre": "string o null",
+      "apellidos": "string o null",
+      "telefono": "string o null (formato limpio, solo números y guiones)",
+      "email": "string o null",
+      "dni": "string o null (formato: 12345678A)",
+      "fechaNacimiento": "string o null (formato: DD/MM/YYYY)",
+      "edad": "number o null",
+      "estado": "Nuevo|Contactado|Interesado|No interesado|Dudoso",
+      "notas": "string con información adicional relevante"
+    }
+  ]
+}
+
+CRITERIOS DE EXTRACCIÓN:
+
+NOMBRES:
+- Extrae nombre y apellidos por separado
+- Si solo se menciona un nombre completo, divide en nombre/apellidos
+- Capitaliza correctamente (Primera Letra Mayúscula)
+
+TELÉFONOS:
+- Acepta formatos: 123456789, 123-456-789, +34 123 456 789, etc.
+- Normaliza a formato: 123456789 (9 dígitos sin espacios ni guiones)
+- Si tiene prefijo internacional, manténlo pero sin espacios
+
+EMAILS:
+- Extrae direcciones completas: usuario@dominio.com
+- Verifica que contengan @ y dominio válido
+
+DNI:
+- Formato español: 8 números + 1 letra
+- Normaliza sin espacios: 12345678A
+
+FECHAS DE NACIMIENTO:
+- Convierte a formato DD/MM/YYYY
+- Acepta formatos: "15 de mayo de 1990", "15/05/1990", "mayo 15, 1990"
+
+EDAD:
+- Si se menciona explícitamente en la transcripción, úsala
+- Si hay fecha de nacimiento, calcula la edad actual correctamente (año actual - año nacimiento)
+- Si no hay fecha ni edad mencionada, devuelve null
+- Redondea a número entero
+
+ESTADO DEL LEAD:
+- "Nuevo": Primer contacto, recién conocido
+- "Contactado": Ya se habló con ellos anteriormente
+- "Interesado": Muestran interés en cursos/servicios
+- "No interesado": Rechazaron o no están interesados
+- "Dudoso": Indecisos, necesitan más información
+
+EJEMPLOS:
+
+Transcripción: "María González López, teléfono 654-321-987, email maria.gonzalez@gmail.com, DNI 12345678A, nació el 15 de mayo de 1990, está muy interesada en el curso de inglés para adultos"
+Respuesta:
+{
+  "leads": [
+    {
+      "nombre": "María",
+      "apellidos": "González López",
+      "telefono": "654321987",
+      "email": "maria.gonzalez@gmail.com",
+      "dni": "12345678A",
+      "fechaNacimiento": "15/05/1990",
+      "edad": 35,
+      "estado": "Interesado",
+      "notas": "Interesada en curso de inglés para adultos"
+    }
+  ]
+}
+
+Transcripción: "Llamó Ana Martín, su número es seis cinco cuatro tres dos uno nueve ocho siete, dice que lo pensará y me llamará la próxima semana"
+Respuesta:
+{
+  "leads": [
+    {
+      "nombre": "Ana",
+      "apellidos": "Martín",
+      "telefono": "654321987",
+      "email": null,
+      "dni": null,
+      "fechaNacimiento": null,
+      "edad": null,
+      "estado": "Dudoso",
+      "notas": "Dice que lo pensará y llamará la próxima semana"
+    }
+  ]
+}
+
+Transcripción: "Pedro Ruiz, pedroruiz85@hotmail.com, 28 años, no le interesa por ahora. Su hermana Carmen Ruiz sí está interesada, su teléfono es 987-654-321"
+Respuesta:
+{
+  "leads": [
+    {
+      "nombre": "Pedro",
+      "apellidos": "Ruiz",
+      "telefono": null,
+      "email": "pedroruiz85@hotmail.com",
+      "dni": null,
+      "fechaNacimiento": null,
+      "edad": 28,
+      "estado": "No interesado",
+      "notas": "No le interesa por ahora"
+    },
+    {
+      "nombre": "Carmen",
+      "apellidos": "Ruiz",
+      "telefono": "987654321",
+      "email": null,
+      "dni": null,
+      "fechaNacimiento": null,
+      "edad": null,
+      "estado": "Interesado",
+      "notas": "Hermana de Pedro Ruiz, sí está interesada"
+    }
+  ]
+}
+
+AHORA EXTRAE LOS DATOS DE ESTA TRANSCRIPCIÓN:
+"${transcription}"
+
+RECORDATORIO CRÍTICO: Si hay fecha de nacimiento, calcula la edad correctamente usando el año actual (2025). Si se menciona edad explícitamente, usa esa. Si no hay ni fecha ni edad, deja como null.
+
+RESPONDE SOLO CON EL JSON:`;
+
+    console.log('🌐 Enviando a OpenAI GPT para extracción de leads...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      max_tokens: 1200
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) throw new Error('No response from OpenAI');
+
+    console.log('📝 Respuesta cruda de GPT (leads):', content);
+    
+    // Limpiar la respuesta para asegurar que sea JSON válido
+    let cleanContent = content.trim();
+    
+    // Remover cualquier texto antes o después del JSON
+    const jsonStart = cleanContent.indexOf('{');
+    const jsonEnd = cleanContent.lastIndexOf('}') + 1;
+    
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      cleanContent = cleanContent.substring(jsonStart, jsonEnd);
+    }
+    
+    console.log('📝 JSON limpio (leads):', cleanContent);
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanContent);
+    } catch (parseError) {
+      console.error('❌ Error parsing JSON (leads):', parseError);
+      console.log('Contenido que falló:', cleanContent);
+      
+      // Fallback: crear estructura básica para leads
+      parsed = {
+        leads: [{
+          nombre: null,
+          apellidos: null,
+          telefono: null,
+          email: null,
+          dni: null,
+          fechaNacimiento: null,
+          edad: null,
+          estado: "Nuevo",
+          notas: transcription.substring(0, 200) + (transcription.length > 200 ? "..." : "")
+        }]
+      };
+    }
+    
+    // Validar y normalizar estructura
+    if (!parsed.leads || !Array.isArray(parsed.leads) || parsed.leads.length === 0) {
+      console.warn('⚠️ Estructura inválida, creando fallback para leads');
+      parsed = {
+        leads: [{
+          nombre: null,
+          apellidos: null,
+          telefono: null,
+          email: null,
+          dni: null,
+          fechaNacimiento: null,
+          edad: null,
+          estado: "Nuevo",
+          notas: transcription.substring(0, 200) + (transcription.length > 200 ? "..." : "")
+        }]
+      };
+    }
+    
+    // Validar y normalizar cada lead
+    const validStates = ["Nuevo", "Contactado", "Interesado", "No interesado", "Dudoso"];
+    
+    parsed.leads = parsed.leads.map((lead: any, index: number) => {
+      // Normalizar teléfono
+      let cleanPhone = lead.telefono;
+      if (cleanPhone && typeof cleanPhone === 'string') {
+        // Limpiar teléfono removiendo espacios, guiones y manteniendo solo números y +
+        cleanPhone = cleanPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+        // Validar formato español (9 dígitos) o internacional (+34...)
+        if (cleanPhone.match(/^\d{9}$/)) {
+          // Mantener formato sin guiones: 123456789
+          cleanPhone = cleanPhone;
+        } else if (cleanPhone.match(/^\+\d+$/)) {
+          // Mantener prefijo internacional sin espacios
+          cleanPhone = cleanPhone;
+        }
+      }
+      
+      // Normalizar DNI
+      let cleanDNI = lead.dni;
+      if (cleanDNI && typeof cleanDNI === 'string') {
+        cleanDNI = cleanDNI.replace(/\s+/g, '').toUpperCase();
+        // Validar formato básico español
+        if (!cleanDNI.match(/^\d{8}[A-Z]$/)) {
+          cleanDNI = null; // Si no es válido, mejor null
+        }
+      }
+      
+      
+      // Normalizar edad
+      let cleanAge = lead.edad;
+      if (cleanAge !== null && cleanAge !== undefined) {
+        cleanAge = parseInt(cleanAge);
+        if (isNaN(cleanAge) || cleanAge < 0 || cleanAge > 120) {
+          cleanAge = null;
+        }
+      }
+      
+      return {
+        nombre: lead.nombre || null,
+        apellidos: lead.apellidos || null,
+        telefono: cleanPhone || null,
+        email: lead.email || null,
+        dni: cleanDNI || null,
+        fechaNacimiento: lead.fechaNacimiento || null,
+        edad: cleanAge,
+        estado: validStates.includes(lead.estado) ? lead.estado : "Nuevo",
+        notas: lead.notas || `Lead ${index + 1} extraído de transcripción`
+      };
+    });
+    
+    console.log('✅ Extracción de leads completada y validada:', parsed);
+    return parsed;
+    
+  } catch (error) {
+    console.error('❌ Error extracting leads data:', error);
+    
+    // Fallback completo en caso de error
+    const fallback = {
+      leads: [{
+        nombre: null,
+        apellidos: null,
+        telefono: null,
+        email: null,
+        dni: null,
+        fechaNacimiento: null,
+        edad: null,
+        estado: "Nuevo",
+        notas: `Error procesando transcripción: ${transcription.substring(0, 100)}...`
+      }]
+    };
+    
+    console.log('🔄 Usando fallback (leads):', fallback);
+    return fallback;
+  }
+}

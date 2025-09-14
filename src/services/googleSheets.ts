@@ -228,28 +228,55 @@ async function addHeadersToSheet(sheetName: string, config: GoogleSheetsConfig, 
   try {
     console.log('📋 Añadiendo encabezados a la hoja:', sheetName);
     
-    const headers = isGeneralSheet ? [
-      'Fecha',
-      'Hora',
-      'Duración (seg)',
-      'Transcripción',
-      'Tema',
-      'Prioridad',
-      'Acciones Pendientes',
-      'Resumen'
-    ] : [
-      'Fecha',
-      'Hora',
-      'Duración (seg)',
-      'Transcripción',
-      'Estudiantes',
-      'Categoría',
-      'Sentimiento',
-      'Resumen',
-      'Acciones'
-    ];
+    // Determinar el tipo de hoja y los encabezados correspondientes
+    let headers: string[];
+    let range: string;
+    
+    if (sheetName === 'Leads') {
+      // Encabezados específicos para la hoja de Leads
+      headers = [
+        'Fecha',
+        'Nombre',
+        'Apellidos',
+        'Teléfono',
+        'Email',
+        'DNI',
+        'Fecha Nacimiento',
+        'Edad',
+        'Estado',
+        'Notas'
+      ];
+      range = 'A1:J1';
+    } else if (isGeneralSheet) {
+      // Encabezados para hoja General
+      headers = [
+        'Fecha',
+        'Hora',
+        'Duración (seg)',
+        'Transcripción',
+        'Tema',
+        'Prioridad',
+        'Acciones Pendientes',
+        'Resumen'
+      ];
+      range = 'A1:H1';
+    } else {
+      // Encabezados para hojas de cursos (estudiantes)
+      headers = [
+        'Fecha',
+        'Hora',
+        'Duración (seg)',
+        'Transcripción',
+        'Estudiantes',
+        'Categoría',
+        'Sentimiento',
+        'Resumen',
+        'Acciones'
+      ];
+      range = 'A1:I1';
+    }
 
-    const range = isGeneralSheet ? 'A1:H1' : 'A1:I1';
+    console.log('📋 Encabezados para', sheetName, ':', headers);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!${range}?valueInputOption=RAW`;
     
     const response = await fetch(url, {
@@ -386,8 +413,12 @@ export async function appendToGoogleSheet(data: any[][] | any[], sheetName: stri
 
     console.log('📝 Datos a enviar:', normalizedData);
     
+    // Determinar rango según tipo de hoja
+    const isLeadsSheet = sheetName === 'Leads';
+    const range = isLeadsSheet ? 'A:J' : 'A:I'; // Leads usa 10 columnas (A-J), otros usan 9 (A-I)
+    
     // Enviar datos a Google Sheets (hoja específica)
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!A:I:append?valueInputOption=RAW`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${sheetName}!${range}:append?valueInputOption=RAW`;
     console.log('🌐 URL de la API:', url);
     
     const response = await fetch(url, {
