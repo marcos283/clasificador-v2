@@ -48,7 +48,7 @@ function App() {
     // Mostrar valores (censurados) para debug
     console.log('Variables de entorno:');
     console.log('- OPENAI_API_KEY:', import.meta.env.VITE_OPENAI_API_KEY ? `${import.meta.env.VITE_OPENAI_API_KEY.substring(0, 10)}...` : 'NO CONFIGURADA');
-    console.log('- GOOGLE_SHEET_ID:', import.meta.env.VITE_GOOGLE_SHEET_ID || 'NO CONFIGURADA');
+    console.log('- GOOGLE_SHEET_ID:', import.meta.env.VITE_GOOGLE_SHEET_ID ? 'CONFIGURADA' : 'NO CONFIGURADA');
     console.log('- SERVICE_ACCOUNT_EMAIL:', import.meta.env.VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL || 'NO CONFIGURADA');
     console.log('- PRIVATE_KEY:', import.meta.env.VITE_GOOGLE_PRIVATE_KEY ? 'CONFIGURADA' : 'NO CONFIGURADA');
     
