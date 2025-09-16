@@ -387,7 +387,7 @@ export async function renameGoogleSheetTab(oldName: string, newName: string): Pr
   }
 }
 
-export async function appendToGoogleSheet(data: any[][] | any[], sheetName: string = 'Sheet1'): Promise<void> {
+export async function appendToGoogleSheet(data: any[][] | any[], sheetName: string = 'Sheet1', alternativeSpreadsheetId?: string): Promise<void> {
   try {
     console.log('📊 Iniciando envío a Google Sheets...');
     console.log('🎯 Hoja destino:', sheetName);
@@ -395,12 +395,17 @@ export async function appendToGoogleSheet(data: any[][] | any[], sheetName: stri
     // Normalizar datos - si es un array simple, convertirlo a array de arrays
     const normalizedData = Array.isArray(data[0]) ? data as any[][] : [data as any[]];
     console.log('📝 Datos normalizados:', normalizedData);
-    
+
+    // Usar el spreadsheet alternativo si se proporciona, si no usar el predeterminado
+    const targetSpreadsheetId = alternativeSpreadsheetId || import.meta.env.VITE_GOOGLE_SHEET_ID;
+
     const config: GoogleSheetsConfig = {
-      spreadsheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
+      spreadsheetId: targetSpreadsheetId,
       serviceAccountEmail: import.meta.env.VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL,
       privateKey: import.meta.env.VITE_GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || ''
     };
+
+    console.log('🎯 Spreadsheet ID objetivo:', targetSpreadsheetId === import.meta.env.VITE_GOOGLE_SHEET_ID ? 'Principal' : 'Alternativo (Alumnos)');
 
     console.log('🔍 Configuración:', {
       spreadsheetId: config.spreadsheetId ? '✅ Configurado' : '❌ Faltante',
@@ -451,5 +456,26 @@ export async function appendToGoogleSheet(data: any[][] | any[], sheetName: stri
   } catch (error) {
     console.error('❌ Error completo sending to Google Sheets:', error);
     throw new Error(`Error al enviar datos a Google Sheets: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+}
+
+export async function appendToAlumnosSheet(data: any[][] | any[]): Promise<void> {
+  try {
+    console.log('📚 Enviando datos adicionales a hoja Alumnos...');
+
+    // ID del Google Sheet alternativo para Alumnos
+    const ALUMNOS_SPREADSHEET_ID = '1OSUQABQTG6WHSUPVMRGyMgZpq-APb0tkHzldj0pAASo';
+
+    // Usar la función principal con el spreadsheet alternativo
+    await appendToGoogleSheet(data, 'Alumnos', ALUMNOS_SPREADSHEET_ID);
+
+    console.log('✅ Datos enviados exitosamente a hoja Alumnos');
+
+  } catch (error) {
+    console.error('❌ Error enviando datos a hoja Alumnos:', error);
+
+    // No relanzar el error para evitar que falle el proceso principal
+    // Solo loguear el error
+    console.warn('⚠️ Continuando sin enviar a hoja Alumnos debido al error');
   }
 }

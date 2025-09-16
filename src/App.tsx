@@ -5,7 +5,7 @@ import { ProcessingStatus } from './components/ProcessingStatus';
 import { SettingsMenu } from './components/SettingsMenu';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
 import { transcribeAudio, classifyContent, classifyGeneralContent, classifyLeadsContent } from './services/openai';
-import { appendToGoogleSheet, listGoogleSheetsTabs, createGoogleSheetTab, renameGoogleSheetTab } from './services/googleSheets';
+import { appendToGoogleSheet, appendToAlumnosSheet, listGoogleSheetsTabs, createGoogleSheetTab, renameGoogleSheetTab } from './services/googleSheets';
 import type { AudioRecording } from './types';
 import { BookOpen, ChevronDown, AlertTriangle } from 'lucide-react';
 
@@ -258,6 +258,12 @@ function App() {
           setProcessingStatus('uploading');
           setDebugInfo(`Enviando a Google Sheets (${currentSheet})...`);
           await appendToGoogleSheet([leadSheetData], currentSheet);
+
+          // También enviar a la hoja Alumnos si estamos en Leads
+          if (currentSheet === LEADS_SHEET_NAME) {
+            setDebugInfo(`Enviando también a hoja Alumnos...`);
+            await appendToAlumnosSheet([leadSheetData]);
+          }
         } else {
           // Crear una fila por cada lead
           const allLeadsData = leadsData.map(lead => [
@@ -284,10 +290,19 @@ function App() {
           setProcessingStatus('uploading');
           setDebugInfo(`Enviando ${leadsData.length} lead(s) a Google Sheets (${currentSheet})...`);
           await appendToGoogleSheet(allLeadsData, currentSheet);
+
+          // También enviar a la hoja Alumnos si estamos en Leads
+          if (currentSheet === LEADS_SHEET_NAME) {
+            setDebugInfo(`Enviando ${leadsData.length} lead(s) también a hoja Alumnos...`);
+            await appendToAlumnosSheet(allLeadsData);
+          }
         }
         
         setProcessingStatus('success');
-        setDebugInfo(`✅ ¡Leads procesados! ${leadsData.length || 1} registro(s) añadido(s) a ${currentSheet}.`);
+        const message = currentSheet === LEADS_SHEET_NAME
+          ? `✅ ¡Leads procesados! ${leadsData.length || 1} registro(s) añadido(s) a ${currentSheet} y hoja Alumnos.`
+          : `✅ ¡Leads procesados! ${leadsData.length || 1} registro(s) añadido(s) a ${currentSheet}.`;
+        setDebugInfo(message);
       } else if (isGeneralSheet) {
         // Clasificación para notas generales
         setDebugInfo('Clasificando nota general con IA...');
