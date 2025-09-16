@@ -8,6 +8,7 @@ Una aplicación web que permite a los profesores grabar notas de voz sobre estud
 - **Transcripción Automática**: Convierte audio a texto usando OpenAI Whisper
 - **Clasificación Inteligente**: Extrae estudiantes, categorías y sentimientos usando GPT-3.5
 - **Integración Google Sheets**: Organiza automáticamente los datos
+- **Escritura Dual para Leads**: Cuando se usa la hoja "Leads", escribe automáticamente en dos Google Sheets
 - **Gestión Avanzada de Cursos**: Crear, renombrar, eliminar y recuperar cursos
 - **Sincronización Inteligente**: Mantiene la interfaz sincronizada con Google Sheets
 - **Interfaz Moderna**: Diseño responsive y fácil de usar
@@ -16,9 +17,24 @@ Una aplicación web que permite a los profesores grabar notas de voz sobre estud
 
 Cada curso se organiza en una pestaña separada de Google Sheets con estas columnas:
 
+### Hojas de Cursos (Estudiantes)
+| A | B | C | D | E | F | G | H | I |
+|---|---|---|---|---|---|---|---|---|
+| Fecha | Hora | Duración (seg) | Transcripción | Estudiantes | Categoría | Sentimiento | Resumen | Acciones |
+
+### Hoja General
 | A | B | C | D | E | F | G | H |
 |---|---|---|---|---|---|---|---|
-| Timestamp | Duración Audio | Transcripción Completa | Estudiantes Mencionados | Categoría Principal | Sentimiento | Resumen | Acciones Sugeridas |
+| Fecha | Hora | Duración (seg) | Transcripción | Tema | Prioridad | Acciones Pendientes | Resumen |
+
+### Hoja Leads (Escritura Dual)
+| A | B | C | D | E | F | G | H | I | J | K | L | M | N | O |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Nombre | Apellidos | DNI | Fecha nacimiento | Teléfono | Email | ID de Contacto | Situación laboral | Curso Terminado | Interés | Disponibilidad | Notas | Whatsapp | Registro ED | Fecha |
+
+**⚡ Funcionalidad Especial**: Cuando se usa la hoja "Leads", los datos se escriben automáticamente en:
+1. **Sheet Principal**: Tu Google Sheet configurado en `.env`
+2. **Sheet Alumnos**: Google Sheet adicional para centralizar leads
 
 **Nota**: Los encabezados se añaden automáticamente al crear nuevos cursos.
 
@@ -126,6 +142,20 @@ VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
    - Extrae el `client_email` y `private_key`
 5. Comparte tu Google Sheet con el email del service account (con permisos de edición)
 
+### ⚡ Configuración Adicional para Escritura Dual
+
+**Para que funcione la escritura dual en la hoja "Leads":**
+
+1. **Comparte también el Google Sheet de Alumnos** con el mismo service account
+   - Ve al Google Sheet de Alumnos: https://docs.google.com/spreadsheets/d/1OSUQABQTG6WHSUPVMRGyMgZpq-APb0tkHzldj0pAASo/
+   - Haz clic en "Compartir"
+   - Agrega el mismo email del service account (el de tu archivo `.env`)
+   - Dale permisos de "Editor"
+
+2. **Crear pestaña "Alumnos"** en el Google Sheet adicional:
+   - El sistema creará automáticamente la pestaña si no existe
+   - Los encabezados se añaden automáticamente con la estructura de Leads
+
 ### 3. Configurar Supabase
 
 1. Haz clic en "Connect to Supabase" en la esquina superior derecha
@@ -151,14 +181,31 @@ npm run build
 
 ## 📱 Cómo Usar
 
-1. **Grabar**: Haz clic en el botón del micrófono para grabar tu nota de voz
-2. **Procesar**: Haz clic en el botón de subida para procesar la grabación
-3. **Revisar**: Los datos se enviarán automáticamente a tu Google Sheet
+1. **Seleccionar Curso**: Desde el menú de configuración, elige el tipo de hoja:
+   - **Cursos específicos**: Para notas sobre estudiantes
+   - **General**: Para notas y tareas generales
+   - **Leads**: Para datos de contacto (⚡ escritura dual automática)
+
+2. **Grabar**: Haz clic en el botón del micrófono para grabar tu nota de voz
+
+3. **Procesar**: Haz clic en el botón de subida para procesar la grabación
+
+4. **Revisar**: Los datos se enviarán automáticamente:
+   - **Hojas normales**: Solo al Google Sheet principal
+   - **Hoja "Leads"**: Al Google Sheet principal Y al Sheet de Alumnos
 
 ### Consejos para Mejores Resultados:
 
+**Para notas de estudiantes:**
 - Menciona claramente los nombres de los estudiantes
 - Describe específicamente el comportamiento o situación
+
+**Para leads (datos de contacto):**
+- Dicta claramente nombres, apellidos y datos de contacto
+- Incluye información como: "María González, teléfono 123-456-789, email maria@gmail.com"
+- Menciona el estado del lead: "está interesada", "no le interesa", "lo va a pensar"
+
+**General:**
 - Habla de forma clara y pausada
 - Evita ruido de fondo
 

@@ -299,7 +299,69 @@ npm run dev
 
 ---
 
-*Documentación técnica creada: Diciembre 2024*  
-*Última actualización: 30/08/2025*  
-*Implementación: 100% completada*  
-*Estado: Operativo - Pendiente feedback visualización*
+---
+
+## 🔄 ACTUALIZACIONES DICIEMBRE 2024
+
+### **Nueva Funcionalidad: Escritura Dual en Hoja Alumnos**
+
+#### **Cambios realizados - Sesión 16/09/2025:**
+
+**1. Modificaciones en `src/services/googleSheets.ts`:**
+- ✅ **Nueva función**: `appendToAlumnosSheet(data)` para escribir en Google Sheet adicional
+- ✅ **Parámetro añadido**: `alternativeSpreadsheetId` opcional en `appendToGoogleSheet()`
+- ✅ **ID hardcodeado**: `1OSUQABQTG6WHSUPVMRGyMgZpq-APb0tkHzldj0pAASo` para sheet Alumnos
+- ✅ **Manejo de errores**: No interrumpe proceso principal si falla escritura secundaria
+
+**2. Actualización en `src/App.tsx`:**
+- ✅ **Import añadido**: `appendToAlumnosSheet` desde googleSheets service
+- ✅ **Lógica dual**: Escritura automática en ambos sheets cuando `currentSheet === LEADS_SHEET_NAME`
+- ✅ **Debug mejorado**: Mensajes específicos para escritura dual
+- ✅ **UX actualizada**: Mensaje de éxito indica escritura en ambas hojas
+
+**3. Flujo técnico de escritura dual:**
+```javascript
+// Cuando se procesa lead
+if (currentSheet === LEADS_SHEET_NAME) {
+  // 1. Escribir en sheet principal
+  await appendToGoogleSheet(allLeadsData, currentSheet);
+
+  // 2. Escribir en sheet Alumnos (automático)
+  await appendToAlumnosSheet(allLeadsData);
+}
+```
+
+**4. Configuración requerida:**
+- ✅ **Permisos**: Service account debe tener acceso a ambos Google Sheets
+- ✅ **Automático**: Creación automática de pestaña "Alumnos" si no existe
+- ✅ **Fallback**: Continúa funcionando aunque falle escritura en sheet secundario
+
+#### **Beneficios de la implementación:**
+- 🎯 **Centralización**: Todos los leads se centralizan automáticamente en hoja Alumnos
+- 🔄 **Redundancia**: Datos guardados en dos ubicaciones para mayor seguridad
+- 🚫 **No disruptivo**: Cero impacto en funcionalidades existentes
+- ⚡ **Automático**: Usuario no necesita hacer nada adicional
+
+#### **Archivos modificados:**
+- `src/services/googleSheets.ts` - +25 líneas (función `appendToAlumnosSheet`)
+- `src/App.tsx` - +12 líneas (lógica de escritura dual)
+
+#### **Testing realizado:**
+- ✅ Compilación exitosa sin errores
+- ✅ Funcionalidad probada y operativa
+- ✅ Escritura dual confirmada funcionando
+- ✅ Commit y push exitoso a rama `leads`
+
+#### **Estado actual (16/09/2025):**
+- 🟢 **Funcionalidad básica**: 100% operativa
+- 🟢 **Escritura dual**: 100% implementada y funcionando
+- 🟢 **Integración Google Sheets**: Verificada en ambos sheets
+- 🟢 **Funcionalidades existentes**: Intactas y operativas
+- 🟢 **Documentación**: Actualizada en README.md
+
+---
+
+*Documentación técnica creada: Diciembre 2024*
+*Última actualización: 16/09/2025*
+*Implementación: 100% completada*
+*Estado: Operativo - Escritura dual funcional*
